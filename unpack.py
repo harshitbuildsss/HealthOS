@@ -1,108 +1,95 @@
 from pathlib import Path
 
-ROOT = Path("daily-health-partner")
-
-directories = [
-    # Backend
-    "backend/app/database",
-    "backend/app/auth",
-    "backend/app/health",
-    "backend/app/mood",
-    "backend/app/medications",
-    "backend/app/appointments",
-    "backend/app/symptoms",
-    "backend/app/ai",
-    "backend/app/dashboard",
-
-    # Frontend
-    "frontend/src/components",
-    "frontend/src/pages",
-    "frontend/src/services",
-    "frontend/src/hooks",
-]
-
-files = [
-    # Backend
-    "backend/app/main.py",
-    "backend/app/database/connection.py",
-    "backend/app/database/models.py",
-
-    "backend/app/auth/routes.py",
-    "backend/app/auth/schemas.py",
-    "backend/app/auth/service.py",
-
-    "backend/app/health/routes.py",
-    "backend/app/health/schemas.py",
-    "backend/app/health/service.py",
-
-    "backend/app/mood/routes.py",
-    "backend/app/mood/schemas.py",
-
-    "backend/app/medications/routes.py",
-    "backend/app/medications/schemas.py",
-
-    "backend/app/appointments/routes.py",
-    "backend/app/appointments/schemas.py",
-
-    "backend/app/symptoms/routes.py",
-    "backend/app/symptoms/schemas.py",
-
-    "backend/app/ai/routes.py",
-    "backend/app/ai/service.py",
-    "backend/app/ai/prompts.py",
-
-    "backend/app/dashboard/routes.py",
-    "backend/app/dashboard/service.py",
-
-    "backend/requirements.txt",
-    "backend/.env",
-
-    # Frontend
-    "frontend/src/components/Navbar.jsx",
-    "frontend/src/components/HealthCard.jsx",
-    "frontend/src/components/HealthInput.jsx",
-    "frontend/src/components/MoodCard.jsx",
-    "frontend/src/components/Chart.jsx",
-    "frontend/src/components/ReminderCard.jsx",
-    "frontend/src/components/EmergencyCard.jsx",
-
-    "frontend/src/pages/Login.jsx",
-    "frontend/src/pages/Register.jsx",
-    "frontend/src/pages/Dashboard.jsx",
-    "frontend/src/pages/Health.jsx",
-    "frontend/src/pages/Mood.jsx",
-    "frontend/src/pages/Meals.jsx",
-    "frontend/src/pages/Medications.jsx",
-    "frontend/src/pages/Appointments.jsx",
-    "frontend/src/pages/Symptoms.jsx",
-    "frontend/src/pages/Assistant.jsx",
-    "frontend/src/pages/Profile.jsx",
-
-    "frontend/src/services/api.js",
-    "frontend/src/services/auth.js",
-    "frontend/src/services/health.js",
-    "frontend/src/services/ai.js",
-
-    "frontend/src/App.jsx",
-    "frontend/src/main.jsx",
-]
+ROOT = Path(__file__).resolve().parent
+DATABASE = ROOT / "backend" / "app" / "database"
 
 
-def create_skeleton():
-    for directory in directories:
-        path = ROOT / directory
-        path.mkdir(parents=True, exist_ok=True)
+def write_file(path: Path, content: str):
+    path.parent.mkdir(parents=True, exist_ok=True)
 
-    for file in files:
-        path = ROOT / file
-        path.parent.mkdir(parents=True, exist_ok=True)
+    # Never overwrite an existing non-empty file.
+    if path.exists() and path.read_text(encoding="utf-8").strip():
+        print(f"[SKIP] Existing non-empty file: {path}")
+        return
 
-        if not path.exists():
-            path.touch()
+    path.write_text(content, encoding="utf-8")
+    print(f"[CREATED] {path}")
 
-    print("Daily Health Partner skeleton created successfully!")
-    print(f"Location: {ROOT.resolve()}")
+
+models_py = r"""from datetime import datetime
+
+from sqlalchemy import DateTime, String
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+
+
+class Base(DeclarativeBase):
+    pass
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    email: Mapped[str] = mapped_column(
+        String(255), unique=True, nullable=False, index=True
+    )
+    full_name: Mapped[str] = mapped_column(String(150), nullable=False)
+    password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=datetime.utcnow,
+        nullable=False,
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=datetime.utcnow,
+        onupdate=datetime.utcnow,
+        nullable=False,
+    )
+"""
+
+
+create_tables_py = r"""from app.database.connection import engine
+from app.database.models import Base
+
+
+def create_tables():
+    Base.metadata.create_all(bind=engine)
+    print("Database tables created successfully.")
 
 
 if __name__ == "__main__":
-    create_skeleton()
+    create_tables()
+"""
+
+
+database_note = r"""# Database Phase
+
+The database foundation currently contains:
+
+- SQLAlchemy Base
+- User model
+- PostgreSQL `healthos` database connection
+- Script for creating SQLAlchemy tables
+
+Run from the backend directory with the virtual environment active:
+
+```powershell
+python -m app.database.create_tables
+```
+
+This phase creates the `users` table. Authentication and the remaining HealthOS models will be added in later phases.
+"""
+
+
+write_file(DATABASE / "models.py", models_py)
+write_file(DATABASE / "create_tables.py", create_tables_py)
+write_file(DATABASE / "DATABASE_PHASE.md", database_note)
+
+print()
+print("Done.")
+print("Target directory:")
+print(DATABASE)
+print()
+print("Next command from the backend directory:")
+print("python -m app.database.create_tables")

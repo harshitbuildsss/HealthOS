@@ -1,4 +1,4 @@
-# Daily Health Partner
+# HealthOS — Daily Health Partner
 
 > An all-in-one daily health tracking application with an AI-powered health assistant.
 
@@ -398,96 +398,65 @@ This is intentionally not part of the initial MVP because multi-user permissions
 
 # Project Structure
 
+The project is currently organized as:
+
 ```text
-daily-health-partner/
+HealthOS/
 │
 ├── backend/
-│   │
+│   ├── .venv/
 │   ├── .env
 │   ├── requirements.txt
-│   │
 │   └── app/
-│       │
 │       ├── main.py
-│       │
 │       ├── ai/
 │       │   ├── prompts.py
 │       │   ├── routes.py
 │       │   └── service.py
-│       │
 │       ├── appointments/
 │       │   ├── routes.py
 │       │   └── schemas.py
-│       │
 │       ├── auth/
+│       │   ├── password.py
 │       │   ├── routes.py
 │       │   ├── schemas.py
 │       │   └── service.py
-│       │
 │       ├── dashboard/
 │       │   ├── routes.py
 │       │   └── service.py
-│       │
 │       ├── database/
 │       │   ├── connection.py
+│       │   ├── create_tables.py
+│       │   ├── DATABASE_PHASE.md
 │       │   └── models.py
-│       │
 │       ├── health/
 │       │   ├── routes.py
 │       │   ├── schemas.py
 │       │   └── service.py
-│       │
 │       ├── medications/
 │       │   ├── routes.py
 │       │   └── schemas.py
-│       │
 │       ├── mood/
 │       │   ├── routes.py
 │       │   └── schemas.py
-│       │
 │       └── symptoms/
 │           ├── routes.py
 │           └── schemas.py
 │
-└── frontend/
-    │
-    └── src/
-        │
-        ├── App.jsx
-        ├── main.jsx
-        │
-        ├── components/
-        │   ├── Chart.jsx
-        │   ├── EmergencyCard.jsx
-        │   ├── HealthCard.jsx
-        │   ├── HealthInput.jsx
-        │   ├── MoodCard.jsx
-        │   ├── Navbar.jsx
-        │   └── ReminderCard.jsx
-        │
-        ├── hooks/
-        │
-        ├── pages/
-        │   ├── Appointments.jsx
-        │   ├── Assistant.jsx
-        │   ├── Dashboard.jsx
-        │   ├── Health.jsx
-        │   ├── Login.jsx
-        │   ├── Meals.jsx
-        │   ├── Medications.jsx
-        │   ├── Mood.jsx
-        │   ├── Profile.jsx
-        │   ├── Register.jsx
-        │   └── Symptoms.jsx
-        │
-        └── services/
-            ├── ai.js
-            ├── api.js
-            ├── auth.js
-            └── health.js
+├── frontend/
+│   └── src/
+│       ├── App.jsx
+│       ├── main.jsx
+│       ├── components/
+│       ├── hooks/
+│       ├── pages/
+│       └── services/
+│
+├── README.md
+└── unpack.py
 ```
 
----
+`unpack.py` is a development helper used to safely create project files without overwriting existing non-empty files.
 
 # Backend Module Responsibilities
 
@@ -505,18 +474,20 @@ Responsible for:
 
 Database layer.
 
-`connection.py` handles the PostgreSQL connection, SQLAlchemy engine, and database sessions.
+`connection.py` handles:
 
-`models.py` will contain:
+- Loading `DATABASE_URL` from `.env`.
+- Creating the SQLAlchemy engine.
+- Testing the PostgreSQL connection.
 
-- User model
-- Health data models
-- Mood model
-- Meal model
-- Medication model
-- Appointment model
-- Symptom model
-- Chat history
+`models.py` currently contains:
+
+- SQLAlchemy `Base`
+- `User` model
+
+`create_tables.py` creates the tables defined in SQLAlchemy metadata.
+
+The current database foundation has been successfully tested against the local PostgreSQL `healthos` database.
 
 ## `auth/`
 
@@ -527,6 +498,13 @@ Authentication functionality:
 - Password handling
 - Authentication
 - User identity
+
+Current implementation includes:
+
+- `schemas.py` with register/login/token request models.
+- `password.py` using Argon2 password hashing through `pwdlib`.
+- `service.py` for registration/database logic.
+- JWT support dependency (`PyJWT`) installed for the upcoming login/token phase.
 
 ## `health/`
 
@@ -644,7 +622,7 @@ These modules will communicate with the FastAPI backend.
 
 # Database Concept
 
-The initial database will revolve around the user and their health records.
+The database is centered around the user and their health records. The `users` table is the first implemented table; the remaining health-related tables will be added incrementally.
 
 ```text
 User
@@ -685,17 +663,35 @@ The application will be built incrementally rather than trying to implement ever
 - [x] Create Python virtual environment
 - [x] Install backend dependencies
 - [x] Install PostgreSQL
-- [ ] Complete PostgreSQL server/service setup
-- [ ] Connect FastAPI to PostgreSQL
+- [x] Verify PostgreSQL Windows service
+- [x] Create `healthos` PostgreSQL database
+- [x] Configure `DATABASE_URL`
+- [x] Connect SQLAlchemy to PostgreSQL
+- [x] Verify PostgreSQL connection from Python
+- [x] Create initial SQLAlchemy `User` model
+- [x] Create initial database tables
+- [x] Install authentication dependencies
+- [x] Implement and test Argon2 password hashing
+- [x] Create authentication request/response schemas
+- [ ] Implement registration API
+- [ ] Implement login API
+- [ ] Implement JWT authentication
 - [ ] Verify backend startup
 
 ## Phase 1 — Core MVP
 
 ### Authentication
 
-- [ ] Register
-- [ ] Login
-- [ ] User authentication
+- [x] Define registration schema
+- [x] Define login schema
+- [x] Define token response schema
+- [x] Implement password hashing
+- [x] Implement password verification
+- [ ] Registration endpoint
+- [ ] Login endpoint
+- [ ] JWT token generation
+- [ ] Protected API dependency
+- [ ] User-specific authorization
 
 ### Health Tracking
 
@@ -789,18 +785,29 @@ backend/
 └── .venv/
 ```
 
-Current backend dependencies include:
+Current backend dependencies:
 
 ```text
 FastAPI
 Uvicorn
-SQLAlchemy
+SQLAlchemy 2.0.54
 psycopg2-binary
 Pydantic
 python-dotenv
+pwdlib[argon2]
+PyJWT
+email-validator
 ```
 
----
+### Important dependency note
+
+SQLAlchemy is intentionally pinned to:
+
+```text
+SQLAlchemy 2.0.54
+```
+
+SQLAlchemy 2.1.x caused a Windows Application Control / compiled-extension loading issue in the development environment, so the project currently remains on 2.0.54.
 
 # Environment Variables
 
@@ -809,7 +816,7 @@ The backend will use a `.env` file for configuration.
 Example:
 
 ```env
-DATABASE_URL=postgresql://postgres:YOUR_PASSWORD@localhost:5432/daily_health_partner
+DATABASE_URL=postgresql+psycopg2://postgres:YOUR_PASSWORD@localhost:5432/healthos
 ```
 
 Do not commit the `.env` file containing real credentials to GitHub.
@@ -825,69 +832,57 @@ __pycache__/
 
 ---
 
-# Current PostgreSQL Setup Issue
+# Current PostgreSQL Setup
 
-PostgreSQL 18 has been installed on the development machine.
+PostgreSQL 18 is installed and running locally.
 
-Installation path:
-
-```text
-C:\Program Files\PostgreSQL8
-```
-
-The installation contains:
+Current PostgreSQL service:
 
 ```text
-bin/
-data/
-lib/
-pgAdmin 4/
+postgresql-x64-18
 ```
 
-However, the PostgreSQL Windows service is currently not appearing in Windows Services.
-
-The following command returned no PostgreSQL service:
-
-```powershell
-Get-Service *postgres*
-```
-
-The PostgreSQL control utility was also blocked by the Windows Application Control policy:
+Current database:
 
 ```text
-Application Control policy has blocked this file
+healthos
 ```
 
-Because of this, the PostgreSQL server is currently not accepting connections on:
+Default local connection:
 
 ```text
 localhost:5432
 ```
 
-The immediate setup task is:
+The PostgreSQL connection has been successfully tested through SQLAlchemy.
 
-```text
-PostgreSQL Installation
-        |
-        v
-Register PostgreSQL Server
-        |
-        v
-Start PostgreSQL Service
-        |
-        v
-Verify localhost:5432
-        |
-        v
-Create daily_health_partner database
-        |
-        v
-Connect FastAPI
+Test:
+
+```powershell
+python -c "from app.database.connection import test_database_connection; print(test_database_connection())"
 ```
 
-This is a development environment/setup issue and does not change the application architecture.
+Current result:
 
----
+```text
+healthos
+```
+
+The initial SQLAlchemy table creation has also been completed:
+
+```powershell
+python -m app.database.create_tables
+```
+
+Result:
+
+```text
+Database tables created successfully.
+```
+
+The initial `users` table is therefore present in the `healthos` database.
+
+> Credentials are stored in `backend/.env` and must not be committed to GitHub.
 
 # Planned API Structure
 
@@ -1095,24 +1090,92 @@ The project is intended as a portfolio-grade full-stack + AI application while m
 
 # Status
 
-**Current Stage: Phase 0 — Setup**
+**Current Stage: Phase 1 — Authentication Foundation**
+
+### Completed
 
 ```text
-Project Structure        [x]
-Backend Skeleton         [x]
-Frontend Skeleton        [x]
-Python Virtual Env       [x]
-Python Dependencies      [x]
-PostgreSQL Installation  [x]
-PostgreSQL Server        [ ]
-Database Connection      [ ]
-Backend Implementation   [ ]
-Frontend Implementation  [ ]
-AI Layer                 [ ]
-Deployment               [ ]
+Project idea / requirements       [x]
+Feature planning                  [x]
+Technology stack                  [x]
+
+Project structure                 [x]
+Backend skeleton                  [x]
+Frontend skeleton                 [x]
+
+Python virtual environment        [x]
+Backend dependencies              [x]
+
+PostgreSQL 18 installation        [x]
+PostgreSQL Windows service        [x]
+`healthos` database               [x]
+`.env` database configuration     [x]
+SQLAlchemy connection             [x]
+PostgreSQL connection test        [x]
+
+SQLAlchemy `Base`                 [x]
+`User` model                      [x]
+Initial table creation            [x]
+`users` table                     [x]
+
+Auth dependencies                 [x]
+Argon2 password hashing           [x]
+Password verification             [x]
+Register/Login schemas            [x]
+Token response schema             [x]
 ```
 
----
+### Currently in progress
+
+```text
+Registration service/API          [ ]
+Login service/API                 [ ]
+JWT token generation              [ ]
+Protected routes                  [ ]
+User-specific authorization       [ ]
+```
+
+### Not started yet
+
+```text
+Health tracking API               [ ]
+Mood API                          [ ]
+Dashboard API                     [ ]
+React authentication flow         [ ]
+React health tracking UI          [ ]
+AI assistant                      [ ]
+Meal AI                           [ ]
+Medications                       [ ]
+Appointments                      [ ]
+Symptoms                          [ ]
+Trends                            [ ]
+Reports                           [ ]
+Deployment                        [ ]
+```
+
+### Current development position
+
+The project has moved beyond environment/database setup.
+
+The current working foundation is:
+
+```text
+React Frontend
+      |
+      v
+FastAPI Backend
+      |
+      v
+Authentication Foundation
+      |
+      v
+SQLAlchemy
+      |
+      v
+PostgreSQL (`healthos`)
+```
+
+The next implementation step is to add the database session dependency, connect registration to PostgreSQL, and then implement login/JWT authentication.
 
 ## License
 
