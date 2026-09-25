@@ -1,6 +1,9 @@
 fastapi
 uvicorn[standard]
-sqlalchemy
+sqlalchemy==2.0.54
 psycopg2-binary
 pydantic
 python-dotenv
+pwdlib[argon2]
+PyJWT
+email-validator
