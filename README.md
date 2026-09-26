@@ -642,7 +642,7 @@ This becomes especially important when authentication and multi-user support are
 
 # Development Roadmap
 
-The application will be built incrementally rather than trying to implement everything simultaneously.
+The application is being built incrementally, with each phase leaving the backend in a working state.
 
 ## Phase 0 — Setup
 
@@ -655,20 +655,11 @@ The application will be built incrementally rather than trying to implement ever
 - [x] Create Python virtual environment
 - [x] Install backend dependencies
 - [x] Install PostgreSQL
-- [x] Verify PostgreSQL Windows service
-- [x] Create `healthos` PostgreSQL database
-- [x] Configure `DATABASE_URL`
-- [x] Connect SQLAlchemy to PostgreSQL
-- [x] Verify PostgreSQL connection from Python
-- [x] Create initial SQLAlchemy `User` model
+- [x] Create PostgreSQL `healthos` database
+- [x] Connect FastAPI to PostgreSQL
+- [x] Verify database connection
 - [x] Create initial database tables
-- [x] Install authentication dependencies
-- [x] Implement and test Argon2 password hashing
-- [x] Create authentication request/response schemas
-- [ ] Implement registration API
-- [ ] Implement login API
-- [ ] Implement JWT authentication
-- [ ] Verify backend startup
+- [x] Verify backend startup
 
 ## Phase 1 — Core MVP
 
@@ -677,25 +668,36 @@ The application will be built incrementally rather than trying to implement ever
 - [x] Define registration schema
 - [x] Define login schema
 - [x] Define token response schema
-- [x] Implement password hashing
+- [x] Implement password hashing with Argon2
 - [x] Implement password verification
-- [ ] Registration endpoint
-- [ ] Login endpoint
-- [ ] JWT token generation
-- [ ] Protected API dependency
-- [ ] User-specific authorization
+- [x] Implement registration API
+- [x] Implement login API
+- [x] Implement JWT authentication
+- [x] Implement protected API dependency
+- [x] Implement `/auth/me`
+- [x] Implement user-specific authorization
+- [x] Test authentication through Swagger
+- [x] Verify user data in PostgreSQL
 
 ### Health Tracking
 
-- [ ] Water
-- [ ] Sleep
-- [ ] Steps
-- [ ] Weight
+- [x] Water tracking
+- [x] Sleep tracking
+- [x] Activity / steps tracking
+- [x] Weight tracking
+- [x] Create health database models
+- [x] Create health schemas
+- [x] Create health services
+- [x] Create health API routes
+- [x] Protect health endpoints with authentication
+- [x] Test health endpoints through Swagger
+- [x] Verify health data is stored in PostgreSQL
 
 ### Mood
 
 - [ ] Mood score
 - [ ] Journal entry
+- [ ] Mood history
 
 ### Dashboard
 
