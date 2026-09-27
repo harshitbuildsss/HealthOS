@@ -701,10 +701,17 @@ The application is being built incrementally, with each phase leaving the backen
 
 ### Dashboard
 
-- [ ] Today's health overview
-- [ ] Recent entries
-- [ ] Basic charts
-- [ ] 7-day history
+- [x] Today's health overview API
+- [x] Recent entries API
+- [x] 7-day history API
+- [x] Dashboard data aggregation
+- [x] Protect dashboard endpoint with authentication
+- [x] Test dashboard endpoint through Swagger
+- [x] Verify dashboard data is retrieved from PostgreSQL
+- [ ] Today's health overview UI
+- [ ] Recent entries UI
+- [ ] Basic charts UI
+- [ ] 7-day history UI
 
 The goal of this phase is to have a genuinely working full-stack application.
 
