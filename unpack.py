@@ -547,3 +547,306 @@ print("Next:")
 print("  1. Add the health router to main.py")
 print("  2. Create the new database tables")
 print("  3. Test the health endpoints")
+
+# ============================================================
+# HealthOS — Mood Tracking Module
+# ============================================================
+
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent
+APP = ROOT / "backend" / "app"
+MOOD = APP / "mood"
+
+
+def write_mood_file(path: Path, content: str):
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    if path.exists() and path.read_text(encoding="utf-8").strip():
+        print(f"[SKIP] Existing non-empty file: {path}")
+        return
+
+    path.write_text(content, encoding="utf-8")
+    print(f"[CREATED] {path}")
+
+
+# ------------------------------------------------------------
+# mood/__init__.py
+# ------------------------------------------------------------
+
+write_mood_file(
+    MOOD / "__init__.py",
+    "",
+)
+
+
+# ------------------------------------------------------------
+# mood/models.py
+# ------------------------------------------------------------
+
+write_mood_file(
+    MOOD / "models.py",
+    r'''from datetime import datetime
+
+from sqlalchemy import DateTime, ForeignKey, Integer, Text
+from sqlalchemy.orm import Mapped, mapped_column
+
+from app.database.models import Base
+
+
+class MoodEntry(Base):
+    __tablename__ = "mood_entries"
+
+    id: Mapped[int] = mapped_column(
+        primary_key=True,
+        autoincrement=True,
+    )
+
+    user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.id"),
+        nullable=False,
+        index=True,
+    )
+
+    mood_score: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+    )
+
+    journal: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+
+    logged_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=datetime.utcnow,
+        nullable=False,
+    )
+''',
+)
+
+
+# ------------------------------------------------------------
+# mood/schemas.py
+# ------------------------------------------------------------
+
+write_mood_file(
+    MOOD / "schemas.py",
+    r'''from datetime import datetime
+
+from pydantic import BaseModel, Field
+
+
+class MoodCreate(BaseModel):
+    mood_score: int = Field(..., ge=1, le=5)
+    journal: str | None = None
+
+
+class MoodResponse(BaseModel):
+    id: int
+    mood_score: int
+    journal: str | None
+    logged_at: datetime
+''',
+)
+
+
+# ------------------------------------------------------------
+# mood/service.py
+# ------------------------------------------------------------
+
+write_mood_file(
+    MOOD / "service.py",
+    r'''from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from app.mood.models import MoodEntry
+from app.mood.schemas import MoodCreate
+
+
+def create_mood(
+    db: Session,
+    user_id: int,
+    data: MoodCreate,
+) -> MoodEntry:
+
+    mood = MoodEntry(
+        user_id=user_id,
+        mood_score=data.mood_score,
+        journal=data.journal,
+    )
+
+    db.add(mood)
+    db.commit()
+    db.refresh(mood)
+
+    return mood
+
+
+def get_moods(
+    db: Session,
+    user_id: int,
+) -> list[MoodEntry]:
+
+    return list(
+        db.scalars(
+            select(MoodEntry)
+            .where(MoodEntry.user_id == user_id)
+            .order_by(MoodEntry.logged_at.desc())
+        )
+    )
+''',
+)
+
+
+# ------------------------------------------------------------
+# mood/routes.py
+# ------------------------------------------------------------
+
+write_mood_file(
+    MOOD / "routes.py",
+    r'''from fastapi import APIRouter, Depends, status
+from sqlalchemy.orm import Session
+
+from app.auth.dependencies import get_current_user
+from app.database.connection import get_db
+from app.mood.schemas import MoodCreate, MoodResponse
+from app.mood.service import create_mood, get_moods
+
+
+router = APIRouter(
+    prefix="/mood",
+    tags=["Mood"],
+)
+
+
+@router.post(
+    "",
+    response_model=MoodResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def add_mood(
+    data: MoodCreate,
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user),
+):
+    return create_mood(db, user_id, data)
+
+
+@router.get(
+    "",
+    response_model=list[MoodResponse],
+)
+def list_moods(
+    db: Session = Depends(get_db),
+    user_id: int = Depends(get_current_user),
+):
+    return get_moods(db, user_id)
+''',
+)
+
+
+# ------------------------------------------------------------
+# Update create_tables.py
+# ------------------------------------------------------------
+
+create_tables = APP / "database" / "create_tables.py"
+
+if create_tables.exists():
+    content = create_tables.read_text(encoding="utf-8")
+
+    import_line = "from app.mood.models import MoodEntry\n"
+
+    if import_line not in content:
+        marker = "from app.database.models import Base\n"
+
+        if marker in content:
+            content = content.replace(
+                marker,
+                marker + import_line,
+            )
+
+            create_tables.write_text(
+                content,
+                encoding="utf-8",
+            )
+
+            print(f"[UPDATED] {create_tables}")
+        else:
+            print("[WARNING] Could not find Base import in create_tables.py")
+    else:
+        print("[SKIP] Mood model already imported in create_tables.py")
+
+
+# ------------------------------------------------------------
+# Update main.py
+# ------------------------------------------------------------
+
+main_py = APP / "main.py"
+
+if main_py.exists():
+    content = main_py.read_text(encoding="utf-8")
+
+    import_line = "from app.mood.routes import router as mood_router\n"
+
+    if import_line not in content:
+        marker = "from app.health.routes import router as health_router\n"
+
+        if marker in content:
+            content = content.replace(
+                marker,
+                marker + import_line,
+            )
+        else:
+            # Fallback: add the import after the FastAPI import
+            marker = "from fastapi import FastAPI\n"
+
+            if marker in content:
+                content = content.replace(
+                    marker,
+                    marker + "\n" + import_line,
+                )
+
+    include_line = "app.include_router(mood_router)"
+
+    if include_line not in content:
+        marker = "app.include_router(health_router)"
+
+        if marker in content:
+            content = content.replace(
+                marker,
+                marker + "\n" + include_line,
+            )
+        else:
+            print("[WARNING] Could not find health router in main.py")
+
+    main_py.write_text(
+        content,
+        encoding="utf-8",
+    )
+
+    print(f"[UPDATED] {main_py}")
+
+
+print()
+print("=" * 40)
+print("HealthOS Mood Module created.")
+print("=" * 40)
+print()
+print("Created:")
+print("  backend/app/mood/__init__.py")
+print("  backend/app/mood/models.py")
+print("  backend/app/mood/schemas.py")
+print("  backend/app/mood/service.py")
+print("  backend/app/mood/routes.py")
+print()
+print("Updated:")
+print("  backend/app/database/create_tables.py")
+print("  backend/app/main.py")
+print()
+print("Next:")
+print("  1. Run database table creation")
+print("  2. Restart FastAPI")
+print("  3. Test POST /mood")
+print("  4. Test GET /mood")

@@ -695,9 +695,9 @@ The application is being built incrementally, with each phase leaving the backen
 
 ### Mood
 
-- [ ] Mood score
-- [ ] Journal entry
-- [ ] Mood history
+- [x] Mood score
+- [x] Journal entry
+- [x] Mood history
 
 ### Dashboard
 

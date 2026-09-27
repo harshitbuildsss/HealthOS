@@ -1,5 +1,6 @@
 from app.database.connection import engine
 from app.database.models import Base
+from app.mood.models import MoodEntry
 
 # Import models so SQLAlchemy registers them with Base.metadata.
 from app.health.models import (
